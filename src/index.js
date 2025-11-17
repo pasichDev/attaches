@@ -90,6 +90,7 @@ export default class AttachesTool {
       buttonText: config.buttonText || 'Select file to upload',
       errorMessage: config.errorMessage || 'File upload failed',
       uploader: config.uploader || undefined,
+      openFile: config.openFile || undefined,
       additionalRequestHeaders: config.additionalRequestHeaders || {},
     };
 
@@ -436,15 +437,39 @@ export default class AttachesTool {
 
     this.nodes.wrapper.appendChild(fileInfo);
 
-    if (file.url !== undefined) {
-      const downloadIcon = make('a', this.CSS.downloadButton, {
-        innerHTML: IconChevronDown,
-        href: file.url,
-        target: '_blank',
+    if (file.url) {
+      const openBtn = make('div', this.CSS.downloadButton, {
+        innerHTML: IconChevronDown
       });
 
-      this.nodes.wrapper.appendChild(downloadIcon);
+      openBtn.style.cursor = 'pointer';
+
+      openBtn.addEventListener('click', async () => {
+
+        // If there is a custom hook, we use it.
+        if (this.config.openFile && typeof this.config.openFile === 'function') {
+          try {
+            await this.config.openFile(file)
+            return
+          } catch (e) {
+            console.error("openFile hook failed:", e)
+          }
+        }
+
+        // Default action — browser opening
+        try {
+          const a = document.createElement('a')
+          a.href = file.url
+          a.target = "_blank"
+          a.click()
+        } catch (e) {
+          console.error("Default open failed:", e)
+        }
+      })
+
+      this.nodes.wrapper.appendChild(openBtn)
     }
+
   }
 
   /**
